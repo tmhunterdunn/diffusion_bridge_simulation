@@ -9,15 +9,43 @@ from scipy.misc import derivative
 
 
 def b_hyp_prime(x, alpha):
+    """ The derivative of the drift term for a hyperbolic diffusion with respect to the state x.
+
+    :x: the state of the process.
+    :alpha: vector of parameters.
+
+    :returns: float. The value of the derivative at x.
+
+    """
 
     theta = alpha[0]
     return -theta/((1+x**2)**1.5)
 
 def phi(x, b, b_prime):
+    """ phi function as defined in Beskos et al. 2006.
+
+    :x: the state of the diffusion.
+    :b: the drift term of the diffusion.
+    :b_prime: the derivative of the drift term with respect to the state of the process.
+
+    :returns: float. The value of phi at the state x.
+
+
+    """
 
     return 0.5*(b(x)**2 + b_prime(x))
 
 def EA1(t, x_0, x_T, b, sample_size, b_prime=None):
+    """ Simulate diffusion bridge paths using the exact algorithm of Beskoe et al. 2006
+
+    :t: vector of time indeces to be used for simulation.
+    :x_0: starting point of the bridge.
+    :x_T: ending point of the bridge.
+    :b: the drift term of the diffusion.
+    :sample_size: the number of paths to be simulated.
+    :b_prime: The drivative of the drift term. Optional. Numeric differentiation will be performed if left out.
+
+    """
 
     T = t[-1]
 
@@ -100,27 +128,6 @@ def EA1(t, x_0, x_T, b, sample_size, b_prime=None):
     return sample
 
 
-def h_beta(x, beta, sigma, x_star):
-
-    return integrate.quad( lambda z: 1/sigma(z, beta), x_star, x)[0]
-
-def mu(alpha, beta, b, sigma, y, x_star, sigma_prime=None):
-
-    def h_for_inv(x):
-        return(h_beta(x, beta, sigma, x_star))
-
-
-    h_inv = inversefunc( h_for_inv)(y)
-
-    if sigma_prime is None:
-        def sigma_for_grad(x):
-            return(sigma(x, beta))
-    
-        sigma_prime = grad( sigma_for_grad)
-        return (b(h_inv, alpha)/sigma(h_inv, beta)) - 0.5*sigma_prime(h_inv)
-    else:
-        return (b(h_inv, alpha)/sigma(h_inv, beta)) - 0.5*sigma_prime(h_inv, beta)
-        
 
 
 if __name__ == "__main__":
