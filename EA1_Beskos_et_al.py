@@ -3,16 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pynverse import inversefunc
 import scipy.integrate as integrate
-from diffusion_utils import sim_paths, sim_brownian_bridge
+from diffusion_utils import sim_paths, sim_brownian_bridge, b_hyp, sigma_hyp
 from scipy.optimize import minimize
 from scipy.misc import derivative
 
-def b_hyp(x, alpha):
-    theta = alpha[0]
-    return -theta*x/((1 + x**2)**0.5)
-
-def sigma_hyp(x, beta):
-    return(beta[0])
 
 def b_hyp_prime(x, alpha):
 
@@ -103,32 +97,14 @@ def EA1(t, x_0, x_T, b, sample_size, b_prime=None):
         Z_sample.append( np.concatenate(filled_paths))
 
     sample = np.vstack(Z_sample)
-#    return paths, skels
     return sample
 
 
 def h_beta(x, beta, sigma, x_star):
-    """Calculate h_{\beta}(x)
-
-    :x: TODO
-    :beta: TODO
-    :x_star: TODO
-    :returns: TODO
-
-    """
 
     return integrate.quad( lambda z: 1/sigma(z, beta), x_star, x)[0]
 
 def mu(alpha, beta, b, sigma, y, x_star, sigma_prime=None):
-    """Calculate \mu_{\alpha, \beta}(y)
-
-    :alpha: TODO
-    :beta: TODO
-    :b: TODO
-    :sigma y: TODO
-    :returns: TODO
-
-    """
 
     def h_for_inv(x):
         return(h_beta(x, beta, sigma, x_star))
@@ -174,9 +150,5 @@ if __name__ == "__main__":
     ax.get_legend().remove()
     ax.set_title("Hyperbolic Bridge Sample")
 
-#    paths, skels = EA1(t, x_0, x_t, b, 20, b_prime)
-     
-#    for p, s in zip(paths, skels):
-#        plt.plot(s, p, marker='.')
 
     plt.show()

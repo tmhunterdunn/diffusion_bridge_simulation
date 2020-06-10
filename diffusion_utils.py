@@ -4,29 +4,55 @@ import matplotlib.pyplot as plt
 
 
 def b_hyp(x, alpha):
+    """The drift term for a hyperbolic diffusion.
+
+    :x: the state of the process.
+    :alpha: vector of parameters.
+
+    """
     theta = alpha[0]
     return -theta*x/((1 + x**2)**0.5)
 
 def sigma_hyp(x, beta):
+    """The diffusion term for a hyperbolic diffusion.
+
+    :x: the state of the process.
+    :beta: vector of parameters.
+
+    """
     return(beta[0])
 
 
 def b_OU(x, alpha):
+    """The drift term for an Ornstein-Uhlenbeck diffusion.
+
+    :x: the state of the process.
+    :alpha: vector of parameters.
+
+    """
     return(-alpha[0]*x)
 
 def sigma_OU(x, beta):
+    """The diffusion term for an Ornstein-Uhlenbeck diffusion.
+
+    :x: the state of the process.
+    :alpha: vector of parameters.
+
+    """
+
     return(beta[0])
 
 
 def simulate_paths_euler(Delta, M, num_paths, x_0, b, sigma):
-    """ simulate paths from a diffusion process.
+    """ Simulate paths from a diffusion process on a fixed time grid using the euler method.
 
-    :b: drift term.
-    :sigma: diffusion term.
-    :t: vector of time indeces for the path. 
+    :Delta: Length of time for the simulation
+    :M: number of time intervals to be simulated.
+    :num_paths: number of paths to be simulated. Integer.
     :x_0: starting point, scalar or vector of length num_paths.
-    :num_paths: 
-    :returns: TODO
+    :b: drift term of the diffusion. Function that takes in and returns a float.
+    :sigma: diffusion term of the diffusion. Function that takes in and returns a float.
+    :returns: num_paths by M+1 numpy array of paths.
 
     """
     
@@ -46,14 +72,14 @@ def simulate_paths_euler(Delta, M, num_paths, x_0, b, sigma):
     return soln
 
 def sim_paths(b, sigma, t, x_0, num_paths):
-    """ simulate paths from a diffusion process.
+    """ simulate paths from a diffusion process on a variable time grid using the euler method.
 
-    :b: drift term.
-    :sigma: diffusion term.
+    :b: drift term. Function that takes in and returns a float.
+    :sigma: diffusion term. Function that takes in and returns a float.
     :t: vector of time indeces for the path. 
     :x_0: starting point, scalar or vector of length num_paths.
-    :num_paths: 
-    :returns: TODO
+    :num_paths: the number of paths to be simulated. Integer.
+    :returns: num_paths by M+1 numpy array of paths.
 
     """
     
@@ -75,6 +101,14 @@ def sim_paths(b, sigma, t, x_0, num_paths):
 
 
 def simulate_brownian_bridge(T, N, num_paths):
+    """ simulate paths from a brownian bridge on a fixed time grid. The bridge starts and ends at zero.
+
+    :T: Time duration of simulation
+    :N: Number of time periods for the simulation.
+    :num_paths: the number of paths to be simulated. Integer.
+    :returns: num_paths by N+1 numpy array of paths.
+
+    """
     soln = np.zeros((num_paths, N+1))
     soln[:,0] = 0
 
@@ -88,6 +122,15 @@ def simulate_brownian_bridge(T, N, num_paths):
     return soln
 
 def sim_brownian_motion(t, num_paths):
+    """ Simulate paths from brownian motion on a variable time grid.
+
+    :t: vector of time indeces for the path.
+    :num_paths: the number of paths to be simulated. Integer.
+
+    :returns: num_paths by len(t) numpy array of paths.
+
+
+    """
     N = len(t)
 
     soln = np.zeros((num_paths, N))
@@ -103,6 +146,15 @@ def sim_brownian_motion(t, num_paths):
 
 
 def sim_brownian_bridge(t, a, b, num_paths):
+    """ simulate paths from a brownian bridge on a variable time grid. The bridge starts at a and ends at b.
+
+    :t: vector of time indeces for simulation
+    :a: the starting point of the bridge. Float.
+    :b: the end point of the bridge. Float.
+
+    :returns: num_paths by len(t) numpy array of paths.
+
+    """
     paths = sim_brownian_motion(t, num_paths)
 
     T = max(t)
@@ -117,33 +169,7 @@ def sim_brownian_bridge(t, a, b, num_paths):
 
     return bridge
 
-def simulate_GBM_bridge(u, sigma, T, N,num_paths):
-    return sigma*simulate_brownian_bridge(T, N, num_paths) + u*np.arange(N+1)/N
 
-def call_payoff(path, K):
-    return max(0, path[-1] - K)
 
-def conv_lookback_call_payoff(path):
-    """This is a floating strike lookback call"""
-    S_max = np.max(path)
-    S_T = path[-1]
-    return (S_max - S_T)**3
 
-def lookback_call_payoff(path):
-    """This is a floating strike lookback call"""
-    S_max = np.max(path)
-    S_T = path[-1]
-    return S_max - S_T
-
-def asian_call_payoff(path):
-    """This is a floating strike arithmetic asian option"""
-    A_T = np.mean(path)
-    S_T = path[-1]
-    return max(A_T - S_T, 0)
-
-def down_and_out_payoff(path, base_payoff, level):
-    if np.min(path) <= level:
-        return 0
-    else:
-        return base_payoff(path)
 

@@ -1,44 +1,21 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from diffusion_utils import sim_paths, simulate_paths_euler
-
-
-def b_hyp(x, alpha):
-    theta = alpha[0]
-    return -theta*x/((1 + x**2)**0.5)
-
-def sigma_hyp(x, beta):
-    return(beta[0])
-
-def alpha(t, x, SDE_type='Vasicek'):
-    if SDE_type == 'BM':
-        return(0.05)
-    elif SDE_type == 'GBM':
-        return(0.01*x)
-    elif SDE_type == 'Vasicek' or SDE_type == 'CIR':
-        alpha = 0.05
-        beta = 0.1
-        return(alpha*(beta - x))
-    elif SDE_type == 'OU':
-        alpha = 0.05
-        return(alpha*x)
-
-def sigma(t, x, SDE_type='Vasicek'):
-    if SDE_type == 'BM':
-        return(1)
-    elif SDE_type == 'GBM':
-        return(0.1*x)
-    elif SDE_type == 'Vasicek':
-        return(0.05)
-    elif SDE_type == 'CIR':
-        return(0.05*(np.maximum(x,0)**0.5))
-    elif SDE_type == 'OU':
-        return(0.05)
-
+from diffusion_utils import sim_paths, simulate_paths_euler, b_hyp, sigma_hyp
 
 
 def sim_crossing(t, x_0, x_T, b, sigma):
+    """ Simulate a crossing between independent forward and backward diffusions.
+
+    :t: vector of time indeces for the simulation.
+    :x_0: Starting point of the forward diffusion.
+    :X_T: Starting point of the backward diffusion.
+    :b: The drift term of the diffusion. Function that takes in and returns a float.
+    :sigma: The diffusion term of the diffusion. Function that takes in and returns a float.
+
+    :returns: tupple of length 5 containing, the bridge, forward diffusion, backward diffusion, crossing points and independent diffusion that hit the bridge.
+
+    """
     while True:
 
         paths = sim_paths(b, sigma, t, [x_0, x_T], 2)
@@ -63,19 +40,39 @@ def sim_crossing(t, x_0, x_T, b, sigma):
             indep_diff[nu:] = Y_1[nu:]
             return (Z, Y_1, Y_2, cross_points, indep_diff)
 
-
-
         
 
-def sim_rho_delta_b_diffusions(t, x_T, num_paths, alpha, sigma):
+def sim_rho_delta_b_diffusions(t, b, num_paths, alpha, sigma):
+    """ Simulate a diffusion process with initial distribution corresponding to the terminal distribution of an independent process if it were started at the point b.
+
+
+    :t: vector of time indeces for the simulation.
+    :b: the starting point of the independent process.
+    :num_paths: the number of paths to be simulated. Integer.
+    :alpha: The drift term of the diffusion. Function that takes in and returns a float.
+    :sigma: The diffusion term of the diffusion. Function that takes in and returns a float.
+
+    :returns: num_paths by M + 1 numpy array of paths. 
+
+
+    """
+
     M = len(t)
     new_t = np.concatenate([t[:-1],t + t[-1]])
 
-    paths = sim_paths(alpha, sigma, new_t, x_T, num_paths)
+    paths = sim_paths(alpha, sigma, new_t, b, num_paths)
     
     return(paths[:, M:])
 
 def paths_intersect(p1, p2):
+    """ Check if two paths intersect.
+
+    :p1: the first path. array like.
+    :p2: the second path. array like.
+
+    :returns: tuple with boolean first element and numpy array of crossing points for second element.
+
+    """
     cross_points = []
     for i in range(min(len(p1), len(p2)) - 1):
         if ((p1[i] >= p2[i]) and (p1[i+1] <= p2[i+1])) or ((p1[i] <= p2[i]) and (p1[i+1] >= p2[i+1])):
@@ -88,7 +85,20 @@ def paths_intersect(p1, p2):
 
 
 
-def estimate_rho_delta(t, x, x_T, N, alpha, sigma):
+def estimate_rho_delta(t, x, b, N, alpha, sigma):
+    """ Estimate the reciprocal of the probability that the path x is hit by an independent rho_delta_b diffusion.
+
+    :t: vector of time indeces for the diffusion paths.
+    :x: the path.
+    :b: the b for the rho_delta_b diffusion.
+    :N: number of monte-carlo simulations to be performed for the estimate.
+    :alpha: The drift term of the diffusion process. Function that takes and returns a float.
+    :sigma: The diffusion term of the diffusion process. Function that takes and returns a float.
+
+    :returns: float. The probability that the path x is hit by and independent rho_delta_b diffusion.
+
+    
+    """
 
     sum_T_j = 0
     for j in range(N):
@@ -96,7 +106,7 @@ def estimate_rho_delta(t, x, x_T, N, alpha, sigma):
 
         while True:
             T_j += 1
-            Y = sim_rho_delta_b_diffusions(t, x_T, 1, alpha, sigma)[0]
+            Y = sim_rho_delta_b_diffusions(t, b, 1, alpha, sigma)[0]
             if paths_intersect(x, Y)[0]:
                 break
 
@@ -110,6 +120,19 @@ def estimate_rho_delta(t, x, x_T, N, alpha, sigma):
 
 
 def MH_sampler(t, x_0, x_T, b, sigma, sample_size):
+    """ Metropolis-Hastings algorithm for sampling diffusion bridges.
+
+    :t: vector of time indeces for the simulation.
+    :x_0: the starting point of the bridge.
+    :x_T: the ending point of the bridge.
+    :b: The drift term of the diffusion process. Function that takes and returns a float.
+    :sigma: The diffusion term of the diffusion process. Function that takes and returns a float.
+    :sample_size: The number of paths to be sampled. Integer.
+
+    :returns: sample_size by len(t) numpy array of paths.
+
+
+    """
 
     Delta = t[-1]
 
