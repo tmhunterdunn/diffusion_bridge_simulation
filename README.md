@@ -1,6 +1,7 @@
 # diffusion_bridge_simulation
 
-Python implementations for diffusion bridge simulation algorithms from [1] and [2]
+I implemented the diffusion bridge simulation algorithms from [1] and [2] in python as part of my masters research essay. You can read the essay in the file MRE.pdf.
+
 
 ## References
 
